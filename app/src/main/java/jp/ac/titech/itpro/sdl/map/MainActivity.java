@@ -5,8 +5,10 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,10 +37,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private TextView infoView;
     private GoogleMap map;
+    private Button button;
 
     private FusedLocationProviderClient locationClient;
     private LocationRequest request;
     private LocationCallback callback;
+
+    private LatLng ll;
+    private boolean first_time = true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +60,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             fragment.getMapAsync(this);
         }
 
+        button = findViewById(R.id.button);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (map != null && ll != null)
+                    //ボタンがクリックされたら現在位置を表示
+                    map.animateCamera(CameraUpdateFactory.newLatLng(ll));
+            }
+        });
+
         locationClient = LocationServices.getFusedLocationProviderClient(this);
 
         request = LocationRequest.create();
@@ -65,13 +82,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 Log.d(TAG, "onLocationResult");
                 Location location = locationResult.getLastLocation();
-                LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
+                ll = new LatLng(location.getLatitude(), location.getLongitude());
                 infoView.setText(getString(R.string.latlng_format, ll.latitude, ll.longitude));
                 if (map == null) {
                     Log.d(TAG, "onLocationResult: map == null");
                     return;
                 }
-                map.animateCamera(CameraUpdateFactory.newLatLng(ll));
+                if (first_time) {
+                    //初回呼び出し時のみ現在位置を表示
+                    map.animateCamera(CameraUpdateFactory.newLatLng(ll));
+                    first_time = false;
+                }
             }
         };
     }
@@ -80,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onStart() {
         super.onStart();
         Log.d(TAG, "onStart");
+        //startLocationUpdate(true);
     }
 
     @Override
